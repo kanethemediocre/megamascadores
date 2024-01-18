@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8"> 
+    <title>MegaMascadores 004 por Andrew Kane </title>
+    <style></style>
+	   <link rel="shortcut icon" href="favicon.ico" >
+   <link rel="icon" type="image/gif" href="animated_favicon1.gif" >
+</head>
+<body class="myElement" oncontextmenu="return false;">
+<canvas id="gameCanvas" width="1000" height="800"></canvas>
+<script type="text/javascript" src="graphics.js"></script>
+<script type="text/javascript" src="texthandling.js"></script>
+<script type="text/javascript" src="mouse.js"></script>
+<script type="text/javascript" src="keyboard.js"></script>
+<script type="text/javascript" src="virtualkey.js"></script>
+<script type="text/javascript" src="mvirtualkeys.js"></script>
+<script type="text/javascript" src="player.js"></script>
+<script type="text/javascript" src="meq.js"></script>
+<script type="text/javascript" src="monster.js"></script>
+<script type="text/javascript" src="mgrid.js"></script>
+<script type="text/javascript" src="mtile.js"></script>
+<script type="text/javascript" src="mgridworld.js"></script>
+<script type="text/javascript" src="msounds.js"></script>
+<script type="text/javascript" src="trivia.js"></script>
+<img id="tgrass1" src="art/tgrass1.png" alt="The Scream" width="200" height="150">
+<img id="playertop1" src="art/PlayerTop.png" alt="The Scream" width="200" height="150">
+<img id="playerbot1" src="art/PlayerBottom.png" alt="The Scream" width="200" height="150">
+<img id="trock1" src="art/trock1.png" alt="The Scream" width="200" height="150">
+<img id="tdirt1" src="art/tdirt1.png" alt="The Scream" width="200" height="150">
+<script>
+const tgrass1 = document.getElementById("tgrass1");//loading images as global variables
+const trock1 = document.getElementById("trock1");//loading images as global variables
+const tdirt1 = document.getElementById("tdirt1");//loading images as global variables
+// declare global variables/////////////////////////////////////////////////
+var mytime = Date.now();
+var FPS = 60;
+setInterval(update, 1000 / FPS);// set up interval (game loop)
+var canvas, context;
+canvas = document.getElementById("gameCanvas"); //canvas is the draw sauce.
+canvas.style.cursor = "crosshair";
+context = canvas.getContext("2d");
+context.canvas.width  = window.innerWidth-24; //This overrides the 1600x900 established in html.
+context.canvas.height = window.innerHeight-24;
+function openFullscreen() {
+  if (canvas.requestFullscreen) {
+    canvas.requestFullscreen();
+  } else if (elem.webkitRequestFullscreen) { /* Safari */
+    canvas.webkitRequestFullscreen();
+  } else if (elem.msRequestFullscreen) { /* IE11 */
+    canvas.msRequestFullscreen();
+  }
+}
+var windowmousexoffset = -8;
+var windowmouseyoffset = -8;
+var fullscreenmousexoffset = -12;
+var fullscreenmouseyoffset = -68;
+var mousestate = 0;
+var mode = 3; //0 for appearance, 1 ship properties, 2 blaster properties, 3 behavior properties
+var mx = 0;
+var my = 0;
+var level = 0;
+var numplayers = 2;
+var gametype = 1; //0 is the menu
+var sound = 0.5;
+var arcadegrids = [];
+var geogrids = [];
+var menustate = [0,0];
+var vkeys = allvkeys(canvas.width,canvas.height);
+var time = 0; //Count of frames elapsed in game time.  Used to track in-game time related stuff.
+var testgrid = new Mgrid("Test Game Grid",6,6);
+var player1 = new Player("P1");
+player1.homey = 1;
+var player2 = new Player("P2");
+player2.c = "lime";
+player2.homex = 1;
+var monster1 = new Monster("M1");
+monster1.x = 3;
+monster1.y = 3;
+testgrid.players = [player1,player2];
+testgrid.monsters = [monster1];
+testgrid.hf = Math.floor(Math.random()*5)+2;
+//testgrid.generateadditiongrid(0,4,0,4);
+
+
+
+
+testgridworld = new Mgridworld("The Grid World 1",64,64,[[0,0]]);
+testgridworld.players = [player1,player2];
+var agrasstile = new Mtile("grass",tgrass1);
+var adirttile = new Mtile("dirt",tdirt1);
+//testgridworld.fillgrid(agrasstile);
+var arocktile = new Mtile("rock",trock1);
+arocktile.blocking = true;
+testgridworld.fillgrid(agrasstile);
+testgridworld.randomreplacetile(arocktile,256);
+
+testgridworld.randomreplacetile(adirttile,512);
+//testgridworld.generateadditiongrid(0,4,0,4);
+//testgridworld.draw(viewx,viewy,xstep,ystep);
+//testgridworld.draw(400,400,120,80);
+
+
+var i=9999;//i=0;
+while (i<36){
+	//var hungryfor = Math.floor(Math.random()*(4+i))+2;
+	var newgrid = new Mgrid("Arcade Level "+i,6,6);
+	var newmonster1 = new Monster("M1");
+	newmonster1.x = newgrid.m-1;
+	newmonster1.y = newgrid.n-1;
+	newgrid.monsters = [newmonster1];
+	if (i>4){
+		var newmonster2 = new Monster("M2");
+		newmonster2.x = 0;
+		newmonster2.y = newgrid.n-1;
+		newmonster2.c = "orange";
+		newgrid.monsters.push(newmonster2);
+		}
+	if (i>8){newgrid.monsters[0].movespeed = .02;}
+	if (i>12){
+		var newmonster3 = new Monster("M3");
+		newmonster3.x = newgrid.m-1;
+		newmonster3.y = 0;
+		newmonster3.c = "yellow";
+		newgrid.monsters.push(newmonster3);
+		}
+	if (i>16){newgrid.monsters[1].movespeed = .02;}
+	if (i>20){newgrid.monsters[2].movespeed = .02;}
+	if (i>24){newgrid.monsters[0].movespeed = .03;}
+	if (i>28){newgrid.monsters[1].movespeed = .03;}
+	if (i>32){newgrid.monsters[2].movespeed = .03;}
+	var color2 = rainbow(i%6); //rainbow is a function from graphics that assigns a color to numbers 0-5.
+	var color1 = rainbow( (i-i%6)/6 );
+	//console.log(color1+" and "+color2);
+	newgrid.colors = [color1,color2]; 
+	newgrid.players = [player1,player2];
+	newgrid.hf = Math.floor(Math.random()*(4+i))+2;
+	if (i%6==1){newgrid.generatesubtractiongrid(0,6+i/2,0,4+i/2);}
+	else if (i%6==2){
+		var addgrid =  new Mgrid("internal use only"+i,6,6);
+		addgrid.generateadditiongrid(0,4+i/2,0,4+i/2);
+		var subgrid =  new Mgrid("internal use only"+i,6,6);
+		subgrid.generatesubtractiongrid(0,6+i/2,0,4+i/2);
+		newgrid.generatemixedgrid(addgrid,subgrid);
+		}
+	else if (i%6==3){newgrid.generateadditiongrid(0,4+i/2,0,4+i/2);}
+	else if (i%6==4){newgrid.generateadditiongrid(0,4+i/2,0,4+i/2);}
+	else if (i%6==5){newgrid.generateadditiongrid(0,4+i/2,0,4+i/2);}
+	else{ newgrid.generateadditiongrid(0,4+i/2,0,4+i/2); }
+	newgrid.respawnplayer(0);
+	newgrid.respawnplayer(1);
+	//arcadegrids.push(newgrid);
+	console.log(newgrid.checktotal());
+	if (newgrid.checktotal()>2){
+		arcadegrids.push(newgrid);
+		i++;
+		}
+	//i++;
+	}
+var geotestgrid = new Mgrid("Geography Test 1",5,5);
+geotestgrid.generatetriviagrid("Continents","Countries",mascageography1());
+
+var i=0;
+while (i<100){
+	var newgrid = new Mgrid("Geography Test 1",5,5);
+	var newmonster1 = new Monster("M1");
+	newmonster1.x = 3;
+	newmonster1.y = 3;
+	newgrid.monsters = [newmonster1];
+	newgrid.players = [player1,player2];
+	newgrid.respawnplayer(0);
+	newgrid.respawnplayer(1);
+	var color2 = rainbow(i%6); //rainbow is a function from graphics that assigns a color to numbers 0-5.
+	var color1 = rainbow( (i-i%6)/6 );
+	//console.log(color1+" and "+color2);
+	newgrid.colors = [color1,color2];
+	newgrid.generatetriviagrid("Continents","Countries",mascageography1());
+	geogrids.push(newgrid);
+	i++;
+	}
+
+//arcadegrids[0].generatetriviagrid("Continents","Countries",mascageography1());
+
+///GAMELOOP/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////update function this is the game loop bruh////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function update() {
+	var truetime = Date.now();
+  	var servertime = mytime+Math.floor(time*1000/FPS);
+  	if (servertime<truetime){
+	time++;
+	context.fillStyle = "black";//Background is black
+	context.fillRect(0, 0, canvas.width, canvas.height); //rectangle the size of the canvas.
+	//testgridworld.drawfollow(120,80,"snap");
+	if (mode == 0){
+		context.fillStyle = "white";
+		var i=0;
+		while(i<vkeys.length){
+			vkeys[i].draw();
+			i++;
+			}
+
+		context.strokeStyle = "pink";
+		context.beginPath();
+		context.rect(canvas.width/2-128,125+100*menustate[0],256,64);
+		context.stroke();
+		context.font='24px Courier New';
+		if (gametype == 1){context.fillText("Matemáticas",canvas.width/2+128,300);}
+		else if (gametype==2){ context.fillText("Geografía",canvas.width/2+128,300); }	
+		context.font='24px Courier New';
+		context.fillText(numplayers + " Players",canvas.width/2+128,500); 
+		context.fillStyle = "lime"
+		context.font='80px Courier New';
+		context.fillText("Mascadores",canvas.width/2-240,80); 
+		}
+	if (mode == 1){
+		arcadegrids[level].update();
+		arcadegrids[level].draw();
+		context.fillStyle = "white";
+		context.font='24px Courier New';
+		context.fillText("Tengo hambre de "+arcadegrids[level].hf,20,20);	
+		context.fillText("Puntas "+arcadegrids[level].players[0].score,420,20);	
+		context.fillText("Remaining "+arcadegrids[level].checktotal(),620,20);	
+		}
+	if (mode == 2){
+		geogrids[level].update();
+		geogrids[level].draw();
+		context.fillStyle = "white";
+		context.font='24px Courier New';
+		context.fillText("Tengo hambre de "+geogrids[level].hf,20,20);	
+		context.fillText("Puntas "+geogrids[level].players[0].score,420,20);	
+		context.fillText("Remaining "+geogrids[level].checktotal(),620,20);	
+		}
+	if (mode == 3){
+		testgridworld.update();
+		testgridworld.drawfollow(200,150,"locked");
+		context.fillStyle = "white";
+		context.font='24px Courier New';
+		context.fillStyle = "black";//Background is black
+		context.fillRect(0, 0, canvas.width, 64); //top bar
+		context.fillStyle = "white";
+		context.fillText("Tengo hambre de "+"thequestitem",20,20);	
+		context.fillText("Puntas "+"thescore",420,20);	
+		context.fillText("Remaining "+"theitemsremaining",620,20);	
+		}
+if(time%2==0){
+    var truetime = Date.now();
+    var servertime = mytime+Math.floor(time*1000/FPS);
+    if (time%(FPS*2)==0){console.log("True time: "+truetime+"Server time: "+servertime+" dt: "+(truetime-servertime));}
+    var lagging = truetime-(servertime+1000/FPS);
+	if (lagging>1000){
+		//console.log("Lagging too far, not correcting "+(truetime-servertime)+" ms");
+		}
+	else if (lagging>0){
+	  update();
+      //console.log("Running extra frame because server is behind "+(truetime-servertime)+" ms");
+      }
+    }
+
+  }else{
+	//console.log("Extra loop skipped because server is ahead "+(servertime-truetime)+"ms");
+	}
+}
+</script>
+</body>
+</html>
