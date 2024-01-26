@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8"> 
+    <title>MegaMascadores 017 por Andrew Kane </title>
+    <style></style>
+	   <link rel="shortcut icon" href="favicon.ico" >
+   <link rel="icon" type="image/gif" href="animated_favicon1.gif" >
+</head>
+<body class="myElement" oncontextmenu="return false;">
+<canvas id="gameCanvas" width="1000" height="800"></canvas>
+<script type="text/javascript" src="mouse.js"></script>
+<script type="text/javascript" src="keyboard.js"></script>
+<script type="text/javascript" src="virtualkey.js"></script>
+<script type="text/javascript" src="mvirtualkeys.js"></script>
+<script type="text/javascript" src="player.js"></script>
+<script type="text/javascript" src="meq.js"></script>
+<script type="text/javascript" src="monster.js"></script>
+<script type="text/javascript" src="mtile.js"></script>
+<script type="text/javascript" src="mnpc.js"></script>
+<script type="text/javascript" src="mdoor.js"></script>
+<script type="text/javascript" src="mquest.js"></script>
+<script type="text/javascript" src="mgridworld.js"></script>
+<script type="text/javascript" src="loadlevel1.js"></script>
+<script type="text/javascript" src="loadlevelhub.js"></script>
+<script type="text/javascript" src="msounds.js"></script>
+<script type="text/javascript" src="trivia.js"></script>
+
+
+<script>
+//<script>
+/*
+<img id="tgrass1" src="./art/tgrass1.png" alt="The Scream" width="200" height="150">
+<img id="playertop1" src="./art/PlayerTop.png" alt="The Scream" width="200" height="150">
+<img id="playerbot1" src="./art/PlayerBottom.png" alt="The Scream" width="200" height="150">
+<img id="trock1" src="./art/trock1.png" alt="The Scream" width="200" height="150">
+<img id="tdirt1" src="./art/tdirt1.png" alt="The Scream" width="200" height="150">
+<img id="caveentrance1" src="./art/CaveEntrance1.png" alt="The Scream" width="200" height="150">
+<img id="npc1" src="./art/NPC1.png" alt="The Scream" width="200" height="150">
+*/
+//const tgrass1 = document.getElementById("tgrass1");//loading images as global variables
+//const trock1 = document.getElementById("trock1");//loading images as global variables
+//const tdirt1 = document.getElementById("tdirt1");//loading images as global variables
+//const playertop1 = document.getElementById("playertop1");//loading images as global variables
+//const playerbot1 = document.getElementById("playerbot1");//loading images as global variables
+//const caveentrance1 = document.getElementById("caveentrance1");//loading images as global variables
+//const npc1 = document.getElementById("npc1");//loading images as global variables
+
+
+
+
+let tgrass1 = document.createElement("img");
+tgrass1.src = "art/tgrass1.png";
+let tgrassog1 = document.createElement("img");
+tgrassog1.src = "art/tgrassog1.png";
+let tgravel1 = document.createElement("img");
+tgravel1.src = "art/tgravel1.png";
+let tdirt1 = document.createElement("img");
+tdirt1.src = "art/tdirt1.png";
+let trock1 = document.createElement("img");
+trock1.src = "art/trock1.png";
+let twater1 = document.createElement("img");
+twater1.src = "art/twater1.png";
+let twaterog1 = document.createElement("img");
+twaterog1.src = "art/twaterog1.png";
+
+let playertop1 = document.createElement("img");
+playertop1.src = "art/PlayerTop.png";
+let playerbot1 = document.createElement("img");
+playerbot1.src = "art/PlayerBottom.png";
+let caveentrance1 = document.createElement("img");
+caveentrance1.src = "art/dcavedoor1.png";
+let npc1 = document.createElement("img");
+npc1.src = "art/NPC1.png";
+let drock1 = document.createElement("img");
+drock1.src = "art/drock1.png";
+let dfenceh = document.createElement("img");
+dfenceh.src = "art/dfenceh.png";
+let dfencev = document.createElement("img");
+dfencev.src = "art/dfencev.png";
+
+// declare global variables/////////////////////////////////////////////////
+var mytime = Date.now();
+var FPS = 60;
+setInterval(update, 1000 / FPS);// set up interval (game loop)
+var canvas, context;
+canvas = document.getElementById("gameCanvas"); //canvas is the draw sauce.
+canvas.style.cursor = "crosshair";
+context = canvas.getContext("2d");
+context.canvas.width  = window.innerWidth-24; //This overrides the 1600x900 established in html.
+context.canvas.height = window.innerHeight-24;
+function openFullscreen() {
+  if (canvas.requestFullscreen) {
+    canvas.requestFullscreen();
+  } else if (elem.webkitRequestFullscreen) { /* Safari */
+    canvas.webkitRequestFullscreen();
+  } else if (elem.msRequestFullscreen) { /* IE11 */
+    canvas.msRequestFullscreen();
+  }
+}
+var windowmousexoffset = -8;
+var windowmouseyoffset = -8;
+var fullscreenmousexoffset = -12;
+var fullscreenmouseyoffset = -68;
+var mousestate = 0;
+var mode = 3; //0 for appearance, 1 ship properties, 2 blaster properties, 3 behavior properties
+var mx = 0;
+var my = 0;
+var level = 0;
+var numplayers = 2;
+var gametype = 1; //0 is the menu
+var sound = 0.5;
+var arcadegrids = [];
+var geogrids = [];
+var menustate = [0,0];
+var vkeys = allvkeys(canvas.width,canvas.height);
+var time = 0; //Count of frames elapsed in game time.  Used to track in-game time related stuff.
+//var testgrid = new Mgrid("Test Game Grid",6,6);
+var player1 = new Player("P1");
+player1.homey = 1;
+var player2 = new Player("P2");
+player2.c = "lime";
+player2.homex = 1;
+var monster1 = new Monster("M1");
+monster1.x = 3;
+monster1.y = 3;
+
+
+
+var testgridworld = new Mgridworld("The Grid World 1",64,40,[[0,0]]);
+player1.quests = [[0,0,0]];
+player1.x = 2;
+player1.y = 2;
+testgridworld.players = [player1];//[player1,player2];
+
+var agrasstile = new Mtile("grass",tgrass1);
+
+var agrassogtile = new Mtile("grass",tgrassog1);
+agrassogtile.autosprout = true;
+
+var awatertile = new Mtile("grass",twater1);
+awatertile.blocking = true;
+awatertile.fertile = false;
+
+var awaterftile = new Mtile("grass",twaterog1);
+awaterftile.blocking = true;
+
+var adirttile = new Mtile("dirt",tdirt1);
+
+var arocktile = new Mtile("rock",trock1);
+arocktile.blocking = true;
+arocktile.fertile = false;
+
+var agraveltile = new Mtile("rock",tgravel1);
+arocktile.fertile = false;
+
+var agrasstilewrock = new Mtile("grass",tgrass1);
+agrasstilewrock.decal = drock1;
+agrasstilewrock.usedecal = true;
+agrasstilewrock.blocking = true;
+
+var adirttilewrock = new Mtile("grass",tdirt1);
+adirttilewrock.decal = drock1;
+adirttilewrock.usedecal = true;
+adirttilewrock.blocking = true;
+
+var agrasstilewfenceh = new Mtile("grass",tgrass1);
+agrasstilewfenceh.decal = dfenceh;
+agrasstilewfenceh.usedecal = true;
+agrasstilewfenceh.blocking = true;
+
+var agrasstilewfencev = new Mtile("grass",tgrass1);
+agrasstilewfencev.decal = dfencev;
+agrasstilewfencev.usedecal = true;
+agrasstilewfencev.blocking = true;
+
+var adirttilewfenceh = new Mtile("grass",tdirt1);
+adirttilewfenceh.decal = dfenceh;
+adirttilewfenceh.usedecal = true;
+adirttilewfenceh.blocking = true;
+
+/*
+testgridworld.fillgrid(agrasstile);
+testgridworld.randomreplacetile(agrassogtile,160);
+testgridworld.randomreplacetile(arocktile,160);
+testgridworld.randomreplacetile(agrasstilewrock,160);
+testgridworld.randomreplacetile(adirttile,320);
+testgridworld.randomplacechars(6,0,80);
+testgridworld.randomplacechars(5,0,80);
+testgridworld.randomplacechars(4,0,80);
+testgridworld.randomplacechars(3,0,80);
+testgridworld.randomplacechars(2,0,40);
+testgridworld.randomplacechars(1,0,20);
+testgridworld.randomplacechars(6,2,20);
+testgridworld.randomplacechars(5,2,40);
+testgridworld.randomplacechars(4,2,80);
+testgridworld.randomplacechars(3,2,80);
+testgridworld.randomplacechars(2,2,80);
+testgridworld.randomplacechars(1,2,80);
+testgridworld.randomplacechars("+",1,100);
+testgridworld.randomplacechars("-",1,100);
+//	randomplacechars(cvalue,cposition,num){
+*/
+
+//randommonsters(topsprites,bottomsprites,color,num){
+testgridworld.randommonsters([playertop1],[playerbot1],"red",50);
+//var levels = [testgridworld];
+var hub = loadlevelhub(agrasstile,arocktile,agrasstilewrock,adirttile,agraveltile,agrassogtile,awaterftile,awatertile);
+hub.players = [player1];
+var cave1 = new Mgridworld("Cave 1",20,30,[[0,0]]);
+cave1.fillgrid(adirttile);
+cave1.randomreplacetile(arocktile,256);
+var cave2 = new Mgridworld("Cave 2",20,30,[[0,0]]);
+cave1.fillgrid(adirttile);
+cave1.randomreplacetile(arocktile,128);
+//loadlevel3(whitetile,blacktile,darkredtile,redtile,darkgreentile,greentile,darkbluetile,bluetile){
+var cave3 = loadlevel3(agrasstile,arocktile,adirttile,agrasstilewrock,adirttilewrock,agrasstilewfenceh,agrasstilewfencev,agraveltile);
+
+var firstnpc = new Mnpc("Juan",7,3,[],npc1);
+var quest0 = new Mquest(4,10,0,0,"=");//constructor(answer,quantity,origin,originmap,type){
+var quest1 = new Mquest(3,10,0,0,"=");//constructor(answer,quantity,origin,originmap,type){
+firstnpc.quests = [quest0,quest1];
+//player1.quests = [0,0,0];
+testgridworld.npcs = [firstnpc];
+var door01 = new Mdoor(18,3,1,0,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door10 = new Mdoor(10,10,0,0,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door02 = new Mdoor(16,13,2,0,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door20 = new Mdoor(20,10,0,1,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door03 = new Mdoor(2,55,3,0,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door30 = new Mdoor(10,10,0,2,caveentrance1);
+var door00a = new Mdoor(18,5,0,4,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door00b = new Mdoor(24,5,0,3,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+testgridworld.doors = [door01,door02,door03,door00a,door00b];
+hub.doors = [door01,door02,door03,door00a,door00b];
+cave1.doors = [door10];
+cave2.doors = [door20];
+cave3.doors = [door30];
+var worlds = [hub,cave1,cave2,cave3]
+
+
+
+
+///GAMELOOP/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////update function this is the game loop bruh////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function update() {
+	var truetime = Date.now();
+  	var servertime = mytime+Math.floor(time*1000/FPS);
+  	if (servertime<truetime){
+	time++;
+	context.fillStyle = "black";//Background is black
+	context.fillRect(0, 0, canvas.width, canvas.height); //rectangle the size of the canvas.
+	//testgridworld.drawfollow(120,80,"snap");
+	if (mode == 0){
+		context.fillStyle = "white";
+		var i=0;
+		while(i<vkeys.length){
+			vkeys[i].draw();
+			i++;
+			}
+
+		context.strokeStyle = "pink";
+		context.beginPath();
+		context.rect(canvas.width/2-128,125+100*menustate[0],256,64);
+		context.stroke();
+		context.font='24px Courier New';
+		if (gametype == 1){context.fillText("Matemáticas",canvas.width/2+128,300);}
+		else if (gametype==2){ context.fillText("Geografía",canvas.width/2+128,300); }	
+		context.font='24px Courier New';
+		context.fillText(numplayers + " Players",canvas.width/2+128,500); 
+		context.fillStyle = "lime"
+		context.font='80px Courier New';
+		context.fillText("Mascadores",canvas.width/2-240,80); 
+		}
+	if (mode == 3){
+		if (time%10==1){worlds[level].spread();}
+		var i=0;
+		while(i<worlds[level].players.length){//check doors
+			var j=0;
+			while(j<worlds[level].doors.length){
+				var doorx = worlds[level].doors[j].x;
+				var doory = worlds[level].doors[j].y;
+				var playerx = worlds[level].players[i].x;
+				var playery = worlds[level].players[i].y;
+				if ((doorx==playerx)&&(doory==playery)){
+					var olddoor = worlds[level].doors[j];
+					var newlevel = worlds[level].doors[j].tomap;
+					var newdoor = worlds[newlevel].doors[olddoor.toi];
+					console.log(worlds[newlevel]);
+					console.log(olddoor);
+					console.log(newlevel);
+					console.log(newdoor);
+					
+					worlds[level].players[i].x = newdoor.x;
+					worlds[level].players[i].y = newdoor.y+1;
+					worlds[newlevel].players.push(worlds[level].players[i]);//now add player to new world
+					worlds[level].players.splice(i, 1);
+					//remove worlds[level].players[i]
+					level = newlevel;
+					//now add player to new World
+					}
+				j++;
+				}
+			i++;
+			}
+		if (worlds[level].players[0].munchstate > 1){//If player has chewed	
+			//handles player 0.  Other players, not so much.
+			var solution = worlds[level].grid[worlds[level].players[0].x][worlds[level].players[0].y].eq.s;
+			var pq = worlds[level].players[0].quests[0];
+			var thequest = worlds[pq[0]].npcs[pq[1]].quests[pq[2]];
+			var target = thequest.answer;
+			console.log(target);
+			console.log(solution);
+			if (target == solution){
+				thequest.gotten++;
+				}
+			else{
+				thequest.gotten--;
+				}
+			//var morepoints = this.players[i].munch( this.grid[this.players[i].x][this.players[i].y] );
+			console.log(pq);
+			//var thequest = this.npcs[pq[1]].quests[pq[2]];
+			//thequest.gotten = thequest.gotten + morepoints;
+			worlds[level].grid[worlds[level].players[0].x][worlds[level].players[0].y].eq.reset();
+			worlds[level].players[0].munchstate = 0;
+			}
+		worlds[level].update();
+		worlds[level].drawfollow(200,150,"locked");
+		
+		if (worlds[level].players[0].quests.length>0){//Should be handled at worlds level
+			//var solution = this.grid[this.players[i].x][this.players[i].y].eq.s;
+			var pq = worlds[level].players[0].quests[0];
+			var thequest = worlds[pq[0]].npcs[pq[1]].quests[pq[2]];
+			var target = thequest.answer;
+			
+			var myquesti = worlds[level].players[0].quests[worlds[level].players[0].quests.length-1];//myquesti[0] is map number, [1] npc number, [2] quest number
+			var myquest = worlds[pq[0]].npcs[pq[1]].quests[pq[2]];//Assumes quest is local, ignoring [0].
+			myquest.draw(400,32);
+			//console.log("Itriedtodrawquests2");
+			}
+		//context.fillStyle = "white";
+		//context.font='24px Courier New';
+		//context.fillStyle = "black";//Background is black
+		//context.fillRect(0, 0, canvas.width, 64); //top bar
+		//context.fillStyle = "white";
+		//context.fillText("Tengo hambre de "+"thequestitem",20,20);	
+		//context.fillText("Puntas "+"thescore",420,20);	
+		//context.fillText("Remaining "+"theitemsremaining",620,20);	
+		
+		 //var pixelData = context.getImageData(4, 25, 1, 1).data; 
+		 //console.log(pixelData);
+	
+		//console.log(context.getImageData(15, 15, 1, 1).data);
+		}
+if(time%2==0){
+    var truetime = Date.now();
+    var servertime = mytime+Math.floor(time*1000/FPS);
+    if (time%(FPS*2)==0){console.log("True time: "+truetime+"Server time: "+servertime+" dt: "+(truetime-servertime));}
+    var lagging = truetime-(servertime+1000/FPS);
+	if (lagging>1000){
+		//console.log("Lagging too far, not correcting "+(truetime-servertime)+" ms");
+		}
+	else if (lagging>0){
+	  update();
+      //console.log("Running extra frame because server is behind "+(truetime-servertime)+" ms");
+      }
+    }
+
+  }else{
+	//console.log("Extra loop skipped because server is ahead "+(servertime-truetime)+"ms");
+	}
+}
+</script>
+</body>
+</html>
