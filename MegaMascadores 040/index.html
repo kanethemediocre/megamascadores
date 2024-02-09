@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8"> 
+    <title>MegaMascadores 040 por Andrew Kane </title>
+    <style></style>
+	   <link rel="shortcut icon" href="favicon.ico" >
+   <link rel="icon" type="image/gif" href="animated_favicon1.gif" >
+</head>
+<body class="myElement" oncontextmenu="return false;">
+<canvas id="gameCanvas" width="1000" height="800"></canvas>
+<script type="text/javascript" src="mouse.js"></script>
+<script type="text/javascript" src="keyboard.js"></script>
+<script type="text/javascript" src="virtualkey.js"></script>
+<script type="text/javascript" src="mvirtualkeys.js"></script>
+<script type="text/javascript" src="player.js"></script>
+<script type="text/javascript" src="meq.js"></script>
+<script type="text/javascript" src="monster.js"></script>
+<script type="text/javascript" src="mtile.js"></script>
+<script type="text/javascript" src="mnpc.js"></script>
+<script type="text/javascript" src="mdoor.js"></script>
+<script type="text/javascript" src="mquest.js"></script>
+<script type="text/javascript" src="mgridworld.js"></script>
+<script type="text/javascript" src="loadlevel1.js"></script>
+<script type="text/javascript" src="loadlevelhub.js"></script>
+<script type="text/javascript" src="loadlevelcave1.js"></script>
+<script type="text/javascript" src="loadlevelcave2.js"></script>
+<script type="text/javascript" src="loadlevelnorth1.js"></script>
+<script type="text/javascript" src="msounds.js"></script>
+<script type="text/javascript" src="trivia.js"></script>
+
+
+<script>
+
+let allsounds = Msounds();
+
+let tgrass1 = document.createElement("img");
+tgrass1.src = "art/tgrass1.png";
+let tgrassog1 = document.createElement("img");
+tgrassog1.src = "art/tgrassog1.png";
+let tgravel1 = document.createElement("img");
+tgravel1.src = "art/tgravel1.png";
+let tdirt1 = document.createElement("img");
+tdirt1.src = "art/tdirt1.png";
+let tdirtog1 = document.createElement("img");
+tdirtog1.src = "art/tdirtog1.png";
+let trock1 = document.createElement("img");
+trock1.src = "art/trock1.png";
+let twater1 = document.createElement("img");
+twater1.src = "art/twater1.png";
+let twaterf1 = document.createElement("img");
+twaterf1.src = "art/twaterf1.png";
+
+let playertop1 = document.createElement("img");
+playertop1.src = "art/PlayerTop.png";
+let playerbot1 = document.createElement("img");
+playerbot1.src = "art/PlayerBottom.png";
+let monstertop1 = document.createElement("img");
+monstertop1.src = "art/MonsterTop.png";
+let monsterbot1 = document.createElement("img");
+monsterbot1.src = "art/MonsterBottom.png";
+
+let rake1 = document.createElement("img");
+rake1.src = "art/rake1.png";
+let hook1 = document.createElement("img");
+hook1.src = "art/hook1.png";
+
+let caveentrance1 = document.createElement("img");
+caveentrance1.src = "art/dcavedoor1.png";
+let npc1 = document.createElement("img");
+npc1.src = "art/NPC1.png";
+let drock1 = document.createElement("img");
+drock1.src = "art/drock1.png";
+let dfenceh = document.createElement("img");
+dfenceh.src = "art/dfenceh.png";
+let dfencev = document.createElement("img");
+dfencev.src = "art/dfencev.png";
+
+// declare global variables/////////////////////////////////////////////////
+var mytime = Date.now();
+var FPS = 60;
+setInterval(update, 1000 / FPS);// set up interval (game loop)
+var mymessage = ["Oldmessage",-999];
+var canvas, context;
+canvas = document.getElementById("gameCanvas"); //canvas is the draw sauce.
+canvas.style.cursor = "crosshair";
+context = canvas.getContext("2d");
+context.canvas.width  = window.innerWidth-24; //This overrides the 1600x900 established in html.
+context.canvas.height = window.innerHeight-24;
+function openFullscreen() {
+  if (canvas.requestFullscreen) {
+    canvas.requestFullscreen();
+  } else if (elem.webkitRequestFullscreen) { /* Safari */
+    canvas.webkitRequestFullscreen();
+  } else if (elem.msRequestFullscreen) { /* IE11 */
+    canvas.msRequestFullscreen();
+  }
+}
+var windowmousexoffset = -8;
+var windowmouseyoffset = -8;
+var fullscreenmousexoffset = -12;
+var fullscreenmouseyoffset = -68;
+var mousestate = 0;
+var mode = 3; //0 for appearance, 1 ship properties, 2 blaster properties, 3 behavior properties
+var mx = 0;
+var my = 0;
+var xstep = 200;
+var ystep = 150;
+var level = 0;
+var numplayers = 2;
+var gametype = 1; //0 is the menu
+var sound = 0.5;
+var arcadegrids = [];
+var geogrids = [];
+var menustate = [0,0];
+var vkeys = allvkeys(canvas.width,canvas.height);
+var time = 0; //Count of frames elapsed in game time.  Used to track in-game time related stuff.
+var autoquest = true;
+//var testgrid = new Mgrid("Test Game Grid",6,6);
+var player1 = new Player("P1");
+player1.homey = 1;
+var player2 = new Player("P2");
+player2.c = "lime";
+player2.homex = 1;
+var monster1 = new Monster("M1");
+monster1.x = 3;
+monster1.y = 3;
+
+
+
+var testgridworld = new Mgridworld("The Grid World 1",64,40,[[0,0]]);
+player1.quests = [[0,0,0]];
+player1.x = 5;
+player1.y = 5;
+testgridworld.players = [player1];//[player1,player2];
+
+var agrasstile = new Mtile("grass",tgrass1);
+
+var agrassogtile = new Mtile("grass",tgrassog1);
+agrassogtile.autosprout = true;
+
+var awatertile = new Mtile("grass",twater1);
+awatertile.blocking = true;
+awatertile.fertile = false;
+
+var awaterftile = new Mtile("grass",twaterf1);
+awaterftile.blocking = true;
+
+var adirttile = new Mtile("dirt",tdirt1);
+
+var adirtogtile = new Mtile("dirt",tdirtog1);
+adirtogtile.autosprout = true;
+
+var adirtogmtile = new Mtile("dirt",tdirtog1);//for multiplication
+adirtogmtile.autosprout = true;
+adirtogmtile.sproutoperators = ["*"];
+adirtogmtile.sproutnums = [1,2,3,4,5,6,7];
+
+var arocktile = new Mtile("rock",trock1);
+arocktile.blocking = true;
+arocktile.fertile = false;
+
+var agraveltile = new Mtile("rock",tgravel1);
+agraveltile.fertile = false;
+
+var agrasstilewrock = new Mtile("grass",tgrass1);
+agrasstilewrock.decal = drock1;
+agrasstilewrock.usedecal = true;
+agrasstilewrock.blocking = true;
+
+var adirttilewrock = new Mtile("grass",tdirt1);
+adirttilewrock.decal = drock1;
+adirttilewrock.usedecal = true;
+adirttilewrock.blocking = true;
+
+var agrasstilewfenceh = new Mtile("grass",tgrass1);
+agrasstilewfenceh.decal = dfenceh;
+agrasstilewfenceh.usedecal = true;
+agrasstilewfenceh.blocking = true;
+
+var agrasstilewfencev = new Mtile("grass",tgrass1);
+agrasstilewfencev.decal = dfencev;
+agrasstilewfencev.usedecal = true;
+agrasstilewfencev.blocking = true;
+
+var adirttilewfenceh = new Mtile("grass",tdirt1);
+adirttilewfenceh.decal = dfenceh;
+adirttilewfenceh.usedecal = true;
+adirttilewfenceh.blocking = true;
+
+
+//randommonsters(topsprites,bottomsprites,color,num){
+//testgridworld.randommonsters([playertop1],[playerbot1],"red",50);
+//var levels = [testgridworld];
+//var hub = loadlevelhub(agrasstile,arocktile,agrasstilewrock,adirttile,agraveltile,agrassogtile,awaterftile,awatertile);
+//loadlevelhub        (whitetile, greytile,   blacktile,darkredtile,    redtile,  darkgreentile,greentile, darkbluetile,bluetile, yellowtile,       cyantile,         purpletile){
+var hub = loadlevelhub(agrasstile,adirtogtile,arocktile,agrasstilewrock,adirttile,agraveltile,agrassogtile,awaterftile,awatertile,agrasstilewfencev,agrasstilewfenceh,adirttilewrock);
+hub.players = [player1];
+//randommonsters(topsprites,bottomsprites,color,num){
+hub.randommonsters([monstertop1],[monsterbot1],"lime",40);
+hub.evictmonsters(0,0,24,24,30,30,55,75);
+
+var north1 = loadlevelnorth1(agrasstile,adirtogtile,arocktile,agrasstilewrock,adirttile,agraveltile,agrassogtile,awaterftile,awatertile,agrasstilewfencev,agrasstilewfenceh,adirttilewrock);
+north1.randommonsters([monstertop1],[monsterbot1],"lime",40);
+
+var cave1 = loadlevelcave1(agrasstile,adirtogmtile,arocktile,agrasstilewrock,adirttile,agraveltile,agrassogtile,awaterftile,awatertile,agrasstilewfencev,agrasstilewfenceh,adirttilewrock);
+cave1.randommonsters([monstertop1],[monsterbot1],"green",8);
+
+//function loadlevelcave2(whitetile,greytile,blacktile,darkredtile,redtile,darkgreentile,greentile,darkbluetile,bluetile,yellowtile,cyantile,purpletile){
+var cave2 = loadlevelcave2(agrasstile,adirtogmtile,arocktile,agrasstilewrock,adirttile,agraveltile,agrassogtile,awaterftile,awatertile,agrasstilewfencev,agrasstilewfenceh,adirttilewrock);
+cave2.randommonsters([monstertop1],[monsterbot1],"orange",8);
+
+//loadlevel3(whitetile,blacktile,darkredtile,redtile,darkgreentile,greentile,darkbluetile,bluetile){
+var cave3 = loadlevel3(agrasstile,arocktile,adirttile,agrasstilewrock,adirttilewrock,agrasstilewfenceh,agrasstilewfencev,agraveltile);
+cave2.randommonsters([monstertop1],[monsterbot1],"pink",8);
+
+
+var hubnpc0 = new Mnpc("Alicia",4,3,[],npc1);
+var hubnpc1 = new Mnpc("Juan",4,24,[],npc1);
+var hubnpc2 = new Mnpc("Lola",44,16,[],npc1);
+var hubnpc3 = new Mnpc("Jose",46,45,[],npc1);
+var cave1npc0 = new Mnpc("Pepe",4,4,[],npc1);
+var cave2npc0 = new Mnpc("Pepe",4,4,[],npc1);
+var cave3npc0 = new Mnpc("Pepe",4,4,[],npc1);
+var quest0 = new Mquest(4,10,0,0,"=","masticación");//constructor(answer,quantity,origin,originmap,type){
+var quest1 = new Mquest(3,10,0,0,"=","velocidad");//constructor(answer,quantity,origin,originmap,type){
+var quest2 = new Mquest(5,10,1,0,"=","masticación");//constructor(answer,quantity,origin,originmap,type){
+var quest3 = new Mquest(6,10,1,0,"=","estómago");//constructor(answer,quantity,origin,originmap,type){
+var quest4 = new Mquest(7,10,2,0,"=","velocidad");//constructor(answer,quantity,origin,originmap,type){
+var quest5 = new Mquest(8,10,2,0,"=","rastrillo");//constructor(answer,quantity,origin,originmap,type){
+var quest6 = new Mquest(9,10,2,0,"=","semilla");//constructor(answer,quantity,origin,originmap,type){
+var quest7 = new Mquest(10,999,2,0,"=","llave");//constructor(answer,quantity,origin,originmap,type){
+var cave1n0q0 = new Mquest(20,10,2,0,"range","caña de pescar");//constructor(answer,quantity,origin,originmap,type){
+cave1n0q0.answermax = 24;
+var cave2n0q0 = new Mquest(9,10,2,0,"=","semilla");//constructor(answer,quantity,origin,originmap,type){
+var cave3n0q0 = new Mquest(9,10,2,0,"=","semilla");//constructor(answer,quantity,origin,originmap,type){
+hubnpc0.quests = [quest0,quest1];
+hubnpc1.quests = [quest2,quest3];
+hubnpc2.quests = [quest4,quest5];
+hubnpc3.quests = [quest6,quest7];
+cave1npc0.quests = [cave1n0q0]
+cave2npc0.quests = [cave2n0q0]
+cave3npc0.quests = [cave3n0q0]
+player1.quests = [[0,0,0],[0,0,1],[0,1,0],[0,1,1],[0,2,0],[0,2,1],[0,3,0],[0,3,1]];
+hub.npcs = [hubnpc0,hubnpc1,hubnpc2,hubnpc3];
+cave1.npcs = [cave1npc0];
+cave2.npcs = [cave2npc0];
+cave3.npcs = [cave3npc0];
+var door01 = new Mdoor(18,57,1,0,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door10 = new Mdoor(4,5,0,0,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door02 = new Mdoor(13,13,2,0,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door20 = new Mdoor(10,10,0,1,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door03 = new Mdoor(64,2,3,0,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door30 = new Mdoor(10,10,0,2,caveentrance1);
+var door00a = new Mdoor(19,3,0,4,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door00b = new Mdoor(22,3,0,3,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door04 = new Mdoor(42,1,4,0,caveentrance1);//constructor(x,y,tomap,toi,sprite){
+var door40 = new Mdoor(42,56,0,5,caveentrance1);
+testgridworld.doors = [door01,door02,door03,door00a,door00b];
+hub.doors = [door01,door02,door03,door00a,door00b,door04];
+cave1.doors = [door10];
+cave2.doors = [door20];
+cave3.doors = [door30];
+north1.doors = [door40];
+
+var worlds = [hub,cave1,cave2,cave3,north1]
+var i=0;
+while(i<worlds.length){
+	var j=0;
+	while(j<128){
+		worlds[i].spread();
+		j++;
+		}
+	i++;
+	}
+
+///GAMELOOP/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////update function this is the game loop bruh////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function update() {
+	var truetime = Date.now();
+  	var servertime = mytime+Math.floor(time*1000/FPS);
+  	if (servertime<truetime){
+	time++;
+	context.fillStyle = "black";//Background is black
+	context.fillRect(0, 0, canvas.width, canvas.height); //rectangle the size of the canvas.
+	//testgridworld.drawfollow(120,80,"snap");
+	if (mode == 0){
+		context.fillStyle = "white";
+		var i=0;
+		while(i<vkeys.length){
+			vkeys[i].draw();
+			i++;
+			}
+
+		context.strokeStyle = "pink";
+		context.beginPath();
+		context.rect(canvas.width/2-128,125+100*menustate[0],256,64);
+		context.stroke();
+		context.font='24px Courier New';
+		if (gametype == 1){context.fillText("Matemáticas",canvas.width/2+128,300);}
+		else if (gametype==2){ context.fillText("Geografía",canvas.width/2+128,300); }	
+		context.font='24px Courier New';
+		context.fillText(numplayers + " Players",canvas.width/2+128,500); 
+		context.fillStyle = "lime"
+		context.font='80px Courier New';
+		context.fillText("Mascadores",canvas.width/2-240,80); 
+		}
+	if (mode == 3){
+		if ((time%30==0)&&(!worlds[level].uniquequests)){worlds[level].spread();}
+		var i=0;
+		while(i<worlds[level].players.length){//check doors
+			var j=0;
+			while(j<worlds[level].doors.length){
+				var doorx = worlds[level].doors[j].x;
+				var doory = worlds[level].doors[j].y;
+				var playerx = worlds[level].players[i].x;
+				var playery = worlds[level].players[i].y;
+				if ((doorx==playerx)&&(doory==playery)){
+					var olddoor = worlds[level].doors[j];
+					var newlevel = worlds[level].doors[j].tomap;
+					var newdoor = worlds[newlevel].doors[olddoor.toi];
+					console.log(worlds[newlevel]);
+					console.log(olddoor);
+					console.log(newlevel);
+					console.log(newdoor);
+					worlds[level].players[i].x = newdoor.x;
+					worlds[level].players[i].y = newdoor.y+1;
+					worlds[newlevel].players.push(worlds[level].players[i]);//now add player to new world
+					worlds[level].players.splice(i, 1);
+					//remove worlds[level].players[i]
+					level = newlevel;
+					//now add player to new World
+					}
+				j++;
+				}
+			i++;
+			}
+		if (worlds[level].players[0].munchstate > 1){//If player has chewed	
+			//handles player 0.  Other players, not so much.
+			var solution = worlds[level].grid[worlds[level].players[0].x][worlds[level].players[0].y].eq.s;
+			if ( worlds[level].players[0].quests.length>0){
+				var pq = worlds[level].players[0].quests[0];
+				var thequest = worlds[pq[0]].npcs[pq[1]].quests[pq[2]];
+				var target = thequest.answer;
+				console.log(target);
+				console.log(solution);
+				if (target == solution){
+					thequest.gotten++;
+					worlds[level].players[0].score = worlds[level].players[0].score+50;
+					//play a munch sound
+					var amunchsound = allsounds[Math.floor(Math.random()*4)];
+					amunchsound.play();
+					}
+				else{
+					thequest.gotten--;
+					allsounds[5].play();
+					}
+				console.log(pq);
+				}
+			worlds[level].grid[worlds[level].players[0].x][worlds[level].players[0].y].eq.reset();
+			worlds[level].players[0].munchstate = 0;
+			}
+		worlds[level].update();
+		worlds[level].drawfollow(xstep,ystep,"locked");
+		if (mymessage[1]>time){
+			context.fillStyle = "black";
+			context.fillRect(canvas.width/2-400,canvas.height-320,800,160);
+			context.fillStyle = "yellow";
+			context.font = "32px Ariel"
+			context.fillText(mymessage[0],canvas.width/2-300,canvas.height-240);
+			context.strokeStyle = "yellow"
+			context.beginPath()
+			context.rect(canvas.width/2-400,canvas.height-320,800,160)
+			context.stroke();
+			}
+		
+		if (worlds[level].players[0].quests.length>0){//Should be handled at worlds level
+			//var solution = this.grid[this.players[i].x][this.players[i].y].eq.s;
+			var pq = worlds[level].players[0].quests[0];
+			var thequest = worlds[pq[0]].npcs[pq[1]].quests[pq[2]];
+			var target = thequest.answer;
+			var myquesti = worlds[level].players[0].quests[worlds[level].players[0].quests.length-1];//myquesti[0] is map number, [1] npc number, [2] quest number
+			var myquest = worlds[pq[0]].npcs[pq[1]].quests[pq[2]];//Assumes quest is local, ignoring [0].
+			myquest.draw(400,32);
+			if ((myquest.gotten >= myquest.quantity)&&(myquest.completed == false)){
+				myquest.completed = true;
+				worlds[level].players[0].score = worlds[level].players[0].score + 500;
+				allsounds[6].play();
+				if (myquest.reward == "masticación"){ worlds[level].players[0].munchspeed = worlds[level].players[0].munchspeed+0.04; }
+				else if (myquest.reward == "velocidad"){ worlds[level].players[0].movespeed = worlds[level].players[0].movespeed+0.02; }
+				else if (myquest.reward == "estómago"){ worlds[level].players[0].stomachsize = worlds[level].players[0].stomachsize+8; }
+				else if (myquest.reward == "rastrillo"){ worlds[level].players[0].rake = true; }
+				else if (myquest.reward == "caña de pescar"){ worlds[level].players[0].rod = true; }
+				else if (myquest.reward == "semilla"){ worlds[level].players[0].seeds.push(Math.floor(Math.random()*8)+1); }
+				else if (myquest.reward == "llave"){ worlds[level].players[0].keys.push(0); }
+				mymessage = ["Su gana un bono de "+myquest.reward+".",time+300];
+				worlds[level].players[0].quests.splice(0,1);
+				}
+			}
+		}
+if(time%2==0){
+    var truetime = Date.now();
+    var servertime = mytime+Math.floor(time*1000/FPS);
+    if (time%(FPS*2)==0){console.log("True time: "+truetime+"Server time: "+servertime+" dt: "+(truetime-servertime));}
+    var lagging = truetime-(servertime+1000/FPS);
+	if (lagging>1000){
+		//console.log("Lagging too far, not correcting "+(truetime-servertime)+" ms");
+		}
+	else if (lagging>0){
+	  update();
+      //console.log("Running extra frame because server is behind "+(truetime-servertime)+" ms");
+      }
+    }
+
+  }else{
+	//console.log("Extra loop skipped because server is ahead "+(servertime-truetime)+"ms");
+	}
+}
+</script>
+</body>
+</html>
