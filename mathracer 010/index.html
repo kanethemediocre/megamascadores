@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8"> 
+    <title>Mathrace prototype 2</title>
+    <style></style>
+	   <link rel="shortcut icon" href="favicon.ico" >
+   <link rel="icon" type="image/gif" href="animated_favicon1.gif" >
+</head>
+<body class="myElement" oncontextmenu="return false;">
+<canvas id="gameCanvas" width="1000" height="800"></canvas>
+<script type="text/javascript" src="mouse.js"></script>
+<script type="text/javascript" src="keyboard.js"></script>
+<script type="text/javascript" src="virtualkey.js"></script>
+<script type="text/javascript" src="mvirtualkeys.js"></script>
+<script type="text/javascript" src="player.js"></script>
+<script type="text/javascript" src="meq.js"></script>
+<script type="text/javascript" src="monster.js"></script>
+<script type="text/javascript" src="mtile.js"></script>
+<script type="text/javascript" src="mnpc.js"></script>
+<script type="text/javascript" src="mdoor.js"></script>
+<script type="text/javascript" src="mquest.js"></script>
+<script type="text/javascript" src="mgridworld.js"></script>
+<script type="text/javascript" src="msounds.js"></script>
+<script type="text/javascript" src="trivia.js"></script>
+<script type="text/javascript" src="umo.js"></script>
+<script>
+
+let allsounds = Msounds();
+let road1 = document.createElement("img");
+road1.src = "art/road1.png";
+let car1 = document.createElement("img");
+car1.src = "art/car1.png";
+let car2 = document.createElement("img");
+car2.src = "art/car2.png";
+let roadrock1 = document.createElement("img");
+roadrock1.src = "art/roadrock1.png";
+let trock1 = document.createElement("img");
+trock1.src = "art/trock1.png";
+
+let reticle1 = document.createElement("img");
+reticle1.src = "art/reticle1.png";
+// declare global variables/////////////////////////////////////////////////
+var mytime = Date.now();
+var FPS = 60;
+setInterval(update, 1000 / FPS);// set up interval (game loop)
+var mymessage = ["Oldmessage",-999];
+var canvas, context;
+canvas = document.getElementById("gameCanvas"); //canvas is the draw sauce.
+canvas.style.cursor = "crosshair";
+context = canvas.getContext("2d");
+context.canvas.width  = window.innerWidth-24; //This overrides the 1600x900 established in html.
+context.canvas.height = window.innerHeight-24;
+function openFullscreen() {
+  if (canvas.requestFullscreen) {
+    canvas.requestFullscreen();
+  } else if (elem.webkitRequestFullscreen) { /* Safari */
+    canvas.webkitRequestFullscreen();
+  } else if (elem.msRequestFullscreen) { /* IE11 */
+    canvas.msRequestFullscreen();
+  }
+}
+var windowmousexoffset = -8;
+var windowmouseyoffset = -8;
+var fullscreenmousexoffset = -12;
+var fullscreenmouseyoffset = -68;
+var mousestate = 0;
+var mode = 3; //0 for appearance, 1 ship properties, 2 blaster properties, 3 behavior properties
+var mx = 0;
+var my = 0;
+var xstep = 64;
+var ystep = 64;
+var level = 0;
+var numplayers = 2;
+var gametype = 1; //0 is the menu
+var sound = 0.5;
+var arcadegrids = [];
+var geogrids = [];
+var menustate = [0,0];
+var vkeys = allvkeys(canvas.width,canvas.height);
+var time = 0; //Count of frames elapsed in game time.  Used to track in-game time related stuff.
+var autoquest = true;
+//var testgrid = new Mgrid("Test Game Grid",6,6);
+var player1 = new Player("P1");
+player1.homey = 1;
+var player2 = new Player("P2");
+player2.c = "lime";
+player2.homex = 1;
+
+var aroadtile = new Mtile("grass",road1);
+
+
+var arocktile = new Mtile("rock",trock1);
+arocktile.blocking = true;
+arocktile.fertile = false;
+
+var aroadrocktile = new Mtile("rock",roadrock1);
+aroadrocktile.blocking = true;
+
+
+
+var testgridworld = new Mgridworld( "The Grid World 1",2048,6,[[62,2],[62,3]] );
+player1.quests = [[0,0,0]];
+player1.targetanswer = Math.floor(Math.random()*9)+1;
+player1.x = 2;
+player1.y = 2;
+player1.xxx = 2*64;
+testgridworld.fillgrid(aroadtile);
+testgridworld.randomreplacetile(aroadrocktile,50);
+testgridworld.players = [player1];//[player1,player2];
+//constructor(name,x,y,quests,sprite)
+var testnpcs = [];
+var i=0;
+while(i<100){
+	var thenewguy = new Mnpc("Eugene",Math.floor(Math.random()*testgridworld.m*xstep),Math.floor(Math.random()*4+1)*-64,[],car2); 
+	testnpcs.push(thenewguy)	
+	i++;
+	}
+testgridworld.npcs = testnpcs;
+var worlds = [testgridworld]
+var i=0;
+while(i<worlds.length){
+	var j=0;
+	while(j<128){
+		//worlds[i].spread();
+		j++;
+		}
+	i++;
+	}
+var player1umo = new Umo(0,0,8,"orange");
+var bullet1 = new Umo(0,0,8,"orange");
+
+///GAMELOOP/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////update function this is the game loop bruh////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+function update() {
+	var truetime = Date.now();
+  	var servertime = mytime+Math.floor(time*1000/FPS);
+  	if (servertime<truetime){
+	time++;
+	context.fillStyle = "black";//Background is black
+	context.fillRect(0, 0, canvas.width, canvas.height); //rectangle the size of the canvas.
+	//testgridworld.drawfollow(120,80,"snap");
+	if (mode == 0){
+		context.fillStyle = "white";
+		var i=0;
+		while(i<vkeys.length){
+			vkeys[i].draw();
+			i++;
+			}
+
+		context.strokeStyle = "pink";
+		context.beginPath();
+		context.rect(canvas.width/2-128,125+100*menustate[0],256,64);
+		context.stroke();
+		context.font='24px Courier New';
+		if (gametype == 1){context.fillText("Matemáticas",canvas.width/2+128,300);}
+		else if (gametype==2){ context.fillText("Geografía",canvas.width/2+128,300); }	
+		context.font='24px Courier New';
+		context.fillText(numplayers + " Players",canvas.width/2+128,500); 
+		context.fillStyle = "lime"
+		context.font='80px Courier New';
+		context.fillText("Mascadores",canvas.width/2-240,80); 
+		}
+	if (mode == 3){
+		//if ((time%30==0)&&(!worlds[level].uniquequests)){worlds[level].spread();}
+		var poldx = worlds[level].players[0].x;
+		worlds[level].update();
+		if ((poldx!=worlds[level].players[0].x)&&(poldx%20==0)){
+			worlds[level].addeqcolumn(worlds[level].players[0].targetanswer,4,poldx+20);	//addeqcolumn(hf,numeqs,x)
+			}
+		var views = worlds[level].drawfollow(xstep,ystep,"locked"); //this draws and returns viewx and viewy as an array.
+		if (worlds[level].players[0].x%24==0)
+		if (mymessage[1]>time){
+			context.fillStyle = "black";
+			context.fillRect(canvas.width/2-400,canvas.height-320,800,160);
+			context.fillStyle = "yellow";
+			context.font = "32px Ariel"
+			context.fillText(mymessage[0],canvas.width/2-300,canvas.height-240);
+			context.strokeStyle = "yellow"
+			context.beginPath()
+			context.rect(canvas.width/2-400,canvas.height-320,800,160)
+			context.stroke();
+			}
+		}
+	context.drawImage(reticle1, mx-32, my-32);//Background/terrain sprite
+	bullet1.drawbomb(views[0]+canvas.width/2,views[1]+canvas.height/2);//views is a list containing viewx and viewy as determined by drawfollow and used by draw
+	//canvas.width etc should be handled elsewhere and not needed in the drawbomb statement, IDKWTF
+	bullet1.update1();
+if(time%2==0){
+    var truetime = Date.now();
+    var servertime = mytime+Math.floor(time*1000/FPS);
+    if (time%(FPS*2)==0){console.log("True time: "+truetime+"Server time: "+servertime+" dt: "+(truetime-servertime));}
+    var lagging = truetime-(servertime+1000/FPS);
+	if (lagging>1000){
+		//console.log("Lagging too far, not correcting "+(truetime-servertime)+" ms");
+		}
+	else if (lagging>0){
+	  update();
+      //console.log("Running extra frame because server is behind "+(truetime-servertime)+" ms");
+      }
+    }
+
+  }else{
+	//console.log("Extra loop skipped because server is ahead "+(servertime-truetime)+"ms");
+	}
+}
+</script>
+</body>
+</html>
